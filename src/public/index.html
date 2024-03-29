@@ -1,1 +1,298 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profit Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        #left-column {
+            margin-right: 20px;
+        }
+        #data-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        #data-table th, #data-table td {
+            border: 1px solid #dddddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #data-table th {
+            background-color: #f2f2f2;
+        }
+        #result {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        label {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        label[data-color="red"] {
+            background-color: red;
+}
+
+
+label[data-color="blue"] {
+    background-color: blue;
+}
+
+        label:hover {
+            background-color: #45a049;
+        }
+
+        label[data-color="red"]:hover {
+            background-color: rgb(121, 2, 2);
+}
+
+
+label[data-color="blue"]:hover {
+    background-color: rgb(1, 1, 107);
+}
+    </style>
+</head>
+<body>
+    <h1>Profit Calculator</h1>
+    <div id="container">
+        <div id="left-column">
+
+            <input type="file" id="fileInput" accept=".json">
+            <label  for="fileInput">Upload File</label>
+            <form id="profitForm">
+                <label data-color="blue" id="calc">Calculate Total Profit and Cost</label>
+            </form>
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th>name</th>
+                        <th>quantity</th>
+                        <th>sold</th>
+                        <th>cost</th>
+                        <th>price</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                </tbody>
+            </table>
+            <label  onclick="addRow()">Add Row</label>
+        </div>
+        <div id="result"></div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+   <script>
+          
+
+function calculate(req={items:[]}) {
+    try {
+        const {items} = req;
+    
+        
+        //  const items = JSON.parse(data).items;
+          
+          let totalCost = 0;
+          let profitSold = 0;
+          let profitLoss = []; 
+          let plTotal =0;
+          if(items?.length>0){
+
+              items.forEach((item,index) => {
+                  totalCost += item.cost * item.quantity;
+                  profitSold += (item.price - item.cost) * item.sold;
+                  plTotal += (item.price*item.sold) - (item.cost * item.quantity);
+                  profitLoss = [...profitLoss,
+                    {
+                        name: item.name,
+                        pl: (item.price*item.sold) - (item.cost * item.quantity),
+                        sold:`${item.sold} Out of ${item.quantity}`,
+                        need:`need to Sell ${((item.price*item.sold) - (item.cost * item.quantity))>0?0:(-1*((item.price*item.sold) - (item.cost * item.quantity))/(item.price) )} items to cover loss`
+                    }
+                ]
+            });
+        }
+         return {
+              totalCost,
+              profitSold,
+              profitLoss,
+              plTotal
+          };
+    
+}
+catch (error) {
+        console.log("error server :", error);
+        return {error};
+    }
+
+}
+          
+          function addRow(item= {name:"New Name",
+quantity:0
+,sold:0
+,cost:0
+,price:0}) {
+    $('#data-table tbody').append(`<tr>
+        <td contenteditable="true">${item.name}</td>
+        <td contenteditable="true">${item.quantity}</td>
+        <td contenteditable="true">${item.sold}</td>
+        <td contenteditable="true">${item.cost}</td>
+        <td contenteditable="true">${item.price}</td>
+        <td><label data-color="red" onclick="removeRow(this)">Remove</label></td>
+        </tr>`);
+}
+
+function removeRow(btn) {
+    $(btn).closest('tr').remove();
+}
+
+function getData() {
+    let data = [];
+    $('#data-table tbody tr').each(function(index, row) {
+        const name = $(row).find('td:eq(0)').text();
+        const quantity = +$(row).find('td:eq(1)').text();
+        const sold = +$(row).find('td:eq(2)').text();
+        const cost = +$(row).find('td:eq(3)').text();
+        const price = +$(row).find('td:eq(4)').text();
+        data= [...data,{ 
+             name
+            ,quantity
+            ,sold
+            ,cost
+            ,price 
+        }
+    ];
+    });
+    console.log(data);
+    return [...data];
+}
+
+function downloadJSON(filename="",data) {
+            //const data = getData();
+            const json = JSON.stringify({ items: data }, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+function processFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please select a file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (!data.items || !Array.isArray(data.items)) {
+                        throw new Error("Invalid JSON format. 'items' array expected.");
+                    }
+                    data.items.forEach(item => {
+                        addRow(item);
+                    });
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    alert("Error processing file: " + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+$(document).ready(function() {
+        
+        
+        $("#fileInput").on("change",function(){
+            processFile();
+        })
+        
+        
+    $('#calc').on("click", async function(event) {
+    // event.preventDefault();
+    let newData = getData();
+    if (newData.length <= 0) {
+        return;
+    }
+
+    try {
+        // const response = await axios.post(
+        //             "http://localhost:3000/calculate",
+        //             { items: newData },
+        //             { headers: { 'Content-Type': 'application/json' } }
+        //         );
+        let response ={data:[]};
+        response["data"] = calculate({ items: newData });
+       
+        let r = "";
+        response.data.profitLoss.forEach(({ name, pl, sold, need }) => {
+            r += `<p>${name} : ${pl} , Sold ${sold}, ${need}</p>`;
+        });
+
+        $('#result').html(`
+            <h2>Result</h2>
+            <p>Total Cost: ${response.data.totalCost}</p>
+            <p>Profit From Sold Items: ${response.data.profitSold}</p>
+            <p>Total Profit: ${response.data.plTotal}</p>
+            ${r}
+        `);
+        let results = {
+            TotalCost:response.data.totalCost,
+            ProfitFromSoldItems:response.data.profitSold,
+            TotalProfit:response.data.plTotal,
+            items:[...response.data.profitLoss],
+        }
+        downloadJSON("data",newData)
+        downloadJSON("results",results)
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+
+});
+
+    </script>
+</body>
+</html>
