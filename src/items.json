@@ -1,0 +1,18 @@
+{
+    "items": [
+        {
+            "name": "Tshirt 1",
+            "quantity": 30,
+            "sold": 5,
+            "cost": 10,
+            "price": 18
+        },
+        {
+            "name": "Tshirt 2",
+            "quantity": 30,
+            "sold": 4,
+            "cost": 10,
+            "price": 20
+        }
+    ]
+}
